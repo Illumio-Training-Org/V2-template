@@ -4,6 +4,14 @@ resource "lab" "main" {
   layout      = resource.layout.instructions_only
 
   content {
+    chapter "start_here" {
+      title = "Before You Start"
+
+      page "github_setup" {
+        reference = resource.page.github_setup
+      }
+    }
+
     chapter "getting_started" {
       title = "[CHAPTER 1 TITLE]"
 

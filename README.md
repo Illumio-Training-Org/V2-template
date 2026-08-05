@@ -17,8 +17,9 @@ container/VM to run checks against; see the comments in `layouts.hcl` and
 |---|---|
 | `main.hcl` | Lab metadata + chapter/page content tree |
 | `layouts.hcl` | UI layout — instructions-only by default; comments show how to add a terminal/tab column once you have a sandbox |
-| `pages.hcl` | Page resource → `instructions/page-template.md`, activities map |
+| `pages.hcl` | Page resources → markdown files, activities map |
 | `tasks.hcl` | One `task` resource per template step, each with a `condition`/`check` |
+| `instructions/00-github-setup.md` | First page in the lab: Create Lab vs Import Lab, and which to use for `Illumio-Training-Org` content. **Delete before publishing to real learners.** |
 | `instructions/page-template.md` | The learner-facing markdown content |
 | `scripts/check_task_0N.sh` | Validation script per task (exit 0 = pass) |
 | `assets/` | Images referenced from `instructions/*.md` |

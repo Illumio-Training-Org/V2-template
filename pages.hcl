@@ -1,3 +1,8 @@
+resource "page" "github_setup" {
+  title = "Before You Start: GitHub & Publishing"
+  file  = "instructions/00-github-setup.md"
+}
+
 resource "page" "template_layout_example" {
   title = "Template layout example"
   file  = "instructions/page-template.md"
