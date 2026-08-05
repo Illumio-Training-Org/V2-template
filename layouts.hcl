@@ -2,24 +2,25 @@ resource "layout" "two_column" {
   column {
     width = "50"
 
-    tab {
-      title = "Instructions"
-      type  = "instructions"
+    instructions {
+      title  = "Instructions"
+      active = true
     }
   }
 
   column {
     width = "50"
 
-    tab {
-      title    = "Terminal"
-      terminal = resource.terminal.shell.meta.id
+    tab "terminal" {
+      title  = "Terminal"
+      target = resource.terminal.shell
+      active = true
     }
 
     # Uncomment if the lab exposes a web UI/service to view in-browser:
-    # tab {
-    #   title   = "[SYSTEM/PLATFORM] Console"
-    #   service = resource.service.console.meta.id
+    # tab "console" {
+    #   title  = "[SYSTEM/PLATFORM] Console"
+    #   target = resource.service.console
     # }
   }
 }
