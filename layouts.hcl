@@ -1,29 +1,24 @@
-# This template ships with an instructions-only layout since it has no
-# sandbox infrastructure defined (see tasks.hcl). Once you add a sandbox
-# (network/container/vm resources — not part of this starting-point
-# template) and want a terminal, editor, or service visible alongside the
-# instructions, add a second column here, e.g.:
+# Default layout: two 50/50 columns, instructions on the right. The left
+# column is empty since this template ships with no sandbox infrastructure
+# (see tasks.hcl / README.md). Once you add a sandbox (network/container/vm
+# resources), give that left column a tab so it's not blank, e.g.:
 #
-# resource "layout" "two_column" {
+# resource "layout" "layout_2_columns" {
 #   column {
-#     width = "50"
-#     instructions {
-#       title  = "Instructions"
-#       active = true
-#     }
-#   }
-#   column {
-#     width = "50"
+#     width = "50%"
 #     tab "terminal" {
 #       title  = "Terminal"
 #       target = resource.terminal.shell
 #       active = true
 #     }
 #   }
+#   column {
+#     width = "50%"
+#     instructions {
+#       title = "Instructions"
+#     }
+#   }
 # }
-#
-# and update main.hcl's `layout = resource.layout.instructions_only` to
-# point at the new layout resource.
 
 resource "layout" "layout_2_columns" {
   column {
