@@ -6,198 +6,114 @@
 > sandbox is set up and before publishing to real learners.
 
 `sandbox.hcl` isn't part of this template (see `../README.md`) — you add it
-per lab. When you do, there are **two separate decisions**: `container` vs
-`vm` (the compute resource), and **preset vs custom image** (what runs on
-it). They're independent — either resource can use either kind of image.
+per lab. Two separate decisions: **`container` vs `vm`** (the compute
+resource), and **preset vs custom image** (what runs on it). Independent —
+either resource can use either kind of image.
 
 ---
 
-# 🧩 Decision 1 — `container` vs `vm`: use `container` unless you hit one of these
+# 🧩 Decision 1 — `container` vs `vm`
 
-**Default to `container`.** It's cheaper to run (shares the host kernel,
-no per-lab VM boot/resource overhead) and starts in seconds instead of
-tens of seconds to minutes. Use it for:
+**Default to `container`** — shares the host kernel, starts in seconds, no
+cloud billing. Good for anything CLI/API-driven, or a service that just
+needs to be *demonstrated*, not enforced at the network level.
 
-- Any lab that's just running CLI commands, hitting an API, or editing
-  files in a shell.
-- Installing and configuring an agent/service in a way that only needs to
-  be *demonstrated*, not enforced at the network level.
-- Anything where learners interact through a terminal/editor/service tab
-  and don't need the sandbox to behave identically to a real production
-  host.
-
-**Switch to `vm` when the lab specifically needs one of these:**
-
-- **Real kernel-level enforcement.** Demonstrating a VEN actually writing
-  and enforcing iptables/nftables/eBPF rules — container network namespace
-  and capability restrictions can make this behave subtly wrong, or
-  require extra privileged flags to even approximate a real host.
-- **A full boot sequence.** Labs that need real `systemd` as PID 1 (not a
-  container-style init substitute), kernel module loading, or sysctls that
-  containers restrict.
-- **More resources or disks than a container reasonably gives you** — the
-  `vm` resource exposes explicit `cpu`/`memory`/`disk`/`startup_script`
-  fields a `container` doesn't.
-- **Multi-service labs simulating a real host's full software stack**,
-  where container isolation between processes would misrepresent how the
-  real product behaves.
-
-If none of those apply, stick with `container` — it's the cheaper default,
-not a fallback.
-
----
-
-# 🧩 `container` — lightweight, fast, shares the host kernel
+**Switch to `vm` when the lab needs:**
+- **Real kernel-level enforcement** — a VEN actually writing/enforcing
+  iptables/nftables/eBPF rules. Container namespace/capability limits can
+  make this subtly wrong. **Confirmed: v1 VEN labs used VMs, not
+  containers** — same rule applies in v2.
+- A real boot sequence (`systemd` as PID 1, kernel modules, restricted
+  sysctls).
+- More CPU/memory/disk than a container reasonably gives you, or
+  multi-service labs where container isolation would misrepresent the real
+  product.
 
 ```hcl
 resource "container" "main" {
-  image {
-    name = "rockylinux:9"
-  }
-  network {
-    id = resource.network.main.meta.id
-  }
+  image { name = "rockylinux:9" }
+  network { id = resource.network.main.meta.id }
 }
-```
 
-A container is a Docker/OCI image — a userspace filesystem snapshot, not a
-full OS boot. It shares the **host machine's kernel** rather than running
-its own.
-
-- Starts in **seconds**.
-- No cloud provider or billing involved — runs on Instruqt's own container
-  runtime.
-- Kernel-level operations (loading kernel modules, some netfilter/iptables
-  behaviour, systemd as PID 1, certain sysctls) can behave differently, or
-  need extra capabilities, compared to a real machine.
-
-Good for: CLI/API-driven labs, anything that just needs a shell with tools
-installed — most labs.
-
-> [!NOTE]
-> Confirmed in the "New Container" UI form: the `Image` field is either
-> **"Use a preset"** — a curated dropdown (Debian `debian:12`, Fedora
-> `fedora:44`, Ubuntu `ubuntu:22.04`, CentOS `centos:8`, Rocky, and more
-> below the fold) — or **"Add a new public or private image on GCP"** for
-> anything outside that list. So a custom container image is pulled from
-> GCP specifically (Artifact Registry/GCR), not an arbitrary Docker Hub
-> reference — worth knowing if a lab needs an image that isn't preset.
-
----
-
-# 🧩 `vm` — heavier, closer to a real machine, same image syntax
-
-```hcl
 resource "vm" "main" {
-  image {
-    name = "ubuntu:24.04"
-  }
+  image { name = "ubuntu:24.04" }
   resources {
     cpu    = 2
     memory = 2048
   }
-  network {
-    id = resource.network.main.meta.id
-  }
+  network { id = resource.network.main.meta.id }
 }
 ```
 
-> [!NOTE]
-> Confirmed against `/reference/sandbox/compute/vm/` **and** the "New
-> Virtual Machine" UI form: `vm` uses the **same Docker/OCI-style
-> `image { name = "..." }` field as `container`**, right down to
-> `username`/`password` fields explicitly labelled "Docker registry user/
-> password to use for private repositories." It is not a way to boot a
-> native cloud provider VM image directly — same preset-or-custom-GCP-image
-> pattern as `container` above. What you get over `container` is a
-> heavier, more configurable sandbox: explicit `cpu`/`memory` (seen in the
-> UI's Resources section), disks, `startup_script`.
-
-Good for: labs that need more resources, disks, or boot-time provisioning
-than a plain container gives you.
+`vm` takes the **same Docker/OCI-style `image` field as `container`**
+(confirmed against the platform, including matching `username`/`password`
+fields for private registries) — it's not a way to boot a native cloud VM
+image. See Decision 3 below if a lab genuinely needs that.
 
 ---
 
-# 🧩 Decision 2 — preset vs custom image: use a preset unless you hit one of these
+# 🧩 Decision 2 — preset, custom, or custom + setup scripts
 
-Both `container` and `vm` offer the same choice in the UI: **"Use a
-preset"** (Debian, Fedora, Ubuntu, CentOS, Rocky, and more) or **"Add a new
-public or private image"** (pulled from GCP). In HCL this is just which
-value goes in `image { name = "..." }` (plus `username`/`password` for a
-private custom image) — same field either way, so switching later is
-cheap.
+Both `container` and `vm` offer the same image choice in the UI: **"Use a
+preset"** (Debian, Fedora, Ubuntu, CentOS, Rocky, more) or **"Add a new
+public or private image"** (pulled from GCP — Artifact Registry/GCR, not
+an arbitrary Docker Hub path). Same `image { name = "..." }` field in HCL
+either way, so switching later is cheap.
 
-**Default to a preset.** No registry auth to manage, already vetted, and
-covers almost every "just need a standard Linux shell" case:
+**Preset** — default choice. No registry to manage, covers any lab where a
+generic OS shell is enough and setup can happen live via `startup_script`
+or task steps.
 
-- Generic OS version is all the lab cares about (e.g. "a Rocky 9 box," "an
-  Ubuntu shell") and standard package managers/repos are enough to install
-  whatever's needed at runtime via `startup_script` or task setup steps.
-- Nothing proprietary needs to be baked in ahead of time.
+**Custom image (build once, reuse everywhere)** — start from a preset,
+install/configure what you need, save it as your own image in your
+registry, then reference that going forward instead of repeating setup
+every run. Worth it when:
+- A product needs to already be running at sandbox start (e.g. a
+  pre-installed, version-pinned VEN), rather than spending the lab's first
+  few minutes on unrelated setup.
+- Exact version pinning matters — a preset's tag can move; a saved custom
+  image doesn't.
+- The same non-standard build gets reused across several labs.
 
-**Switch to a custom image when:**
+**Custom image + setup scripts on top** — a common hybrid (used this way
+for Kubernetes classes in v1): bake the slow/repetitive parts into the
+saved image, then use `startup_script` (`vm`) or task setup steps
+(`container`) for whatever still needs to vary per-lab or per-run. Good
+when the base is stable but final config/state shouldn't be permanently
+baked in.
 
-- **A specific product needs to already be installed/configured** at
-  sandbox start — e.g. a VEN pre-installed at a pinned version, so the lab
-  doesn't spend its first several minutes on setup steps unrelated to what
-  it's actually teaching.
-- **Exact version pinning matters for reproducibility** beyond what a
-  preset's tag gives you (presets can move, e.g. `ubuntu:22.04` today vs.
-  whatever `22.04` resolves to later) — build once, reference the same
-  custom image everywhere it's needed.
-- **The OS/config isn't in the preset list at all** (a specific
-  distro/version combo, or a hardened/customer-representative build).
-- **The same non-standard setup is reused across many labs** — build the
-  custom image once, reference it from every lab's `sandbox.hcl`, instead
-  of repeating setup steps/scripts in each one.
-
-If none of those apply, a preset is simpler and one less thing to maintain.
+If none of the above apply, a preset is simpler and one less thing to
+maintain.
 
 ---
 
-# 🧩 A real cloud VM image (e.g. a specific GCP Rocky Linux build)
+# 🧩 Decision 3 — a real native cloud VM image
 
-**Confirmed: not through `container`/`vm`, but possible via the `terraform`
-resource.** The full sandbox resource catalog has no dedicated
-"native GCP VM" resource — `container` and `vm` are always Docker/OCI-style
-image references (preset or GCP-hosted custom), and `google_project` only
-provisions a sandboxed GCP *project* (IAM users/service accounts/API
-enablement), not compute instances.
-
-What actually gets you a real native cloud image is the separate
-**`terraform`** sandbox resource — it runs your own `.tf` files (standard
-Terraform, any provider) inside a container and can pass variables in and
-capture outputs back out for other Instruqt resources to use:
+**Not possible through `container`/`vm`** — confirmed against the full
+sandbox resource catalog, neither takes a native GCP Compute Engine image
+(e.g. `rocky-linux-cloud/rocky-linux-9-optimized-gcp-v20241009`), only
+Docker/OCI-style references. The actual path is the **`terraform`**
+resource — your own `.tf` files, run via real `terraform apply`, outputs
+available to other Instruqt resources:
 
 ```hcl
 resource "terraform" "gcp_vm" {
-  source            = "./terraform"
-  version           = "1.9.8"
-  working_directory = "/terraform"
-  variables = {
-    image = "rocky-linux-cloud/rocky-linux-9-optimized-gcp-v20241009"
-  }
+  source  = "./terraform"
+  version = "1.9.8"
 }
 ```
 
-`./terraform` here is a folder of ordinary `.tf` files you write yourself,
-using the real Google Terraform provider's `google_compute_instance`
-resource with that exact image reference — Instruqt just runs
-`terraform apply` for you and can wire the result (e.g. an IP address)
-into a `terminal`/`service` tab via captured outputs. This is a
-meaningfully bigger lift than `container`/`vm` (real GCP credentials/
-project, real Terraform state, real boot time/cost) — only reach for it
-when a lab specifically needs the real OS/hypervisor-level behaviour a
-Docker-style image genuinely can't provide, not as a default.
+`./terraform` is a folder you write yourself, using the real Google
+provider's `google_compute_instance` with that image reference. Real GCP
+credentials/project, real state, real boot time/cost — only reach for this
+when a lab genuinely needs hypervisor-level fidelity a `vm` can't give.
 
 ---
 
-The short version, specific to Illumio content: **any lab demonstrating a
-VEN actually enforcing rules needs `vm`; a lab that just installs/inspects/
-runs CLI commands against a VEN can stay on the cheaper `container`. And on
-top of that, reach for a custom image only once a preset stops being
-enough** — e.g. the VEN needs to be pre-installed rather than set up live,
-or the same non-standard build gets reused across several labs.
+**Short version for Illumio content:** enforcement demos need `vm`; CLI/
+inspection-only labs can stay on `container`. Reach for a custom (or
+custom + scripts) image once a preset stops being enough — usually because
+something needs to be pre-installed or version-pinned.
 
-See `../v2-migration-notes.md` for further evidence/updates as this gets
-tested against real labs.
+See `../v2-migration-notes.md` for the full evidence trail behind these
+claims.
