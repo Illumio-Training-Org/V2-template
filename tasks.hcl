@@ -2,13 +2,18 @@
 # lab's tasks are fleshed out — these are 1:1 with the
 # <instruqt-task id="task_0N"> markers in instructions/page-template.md
 # and the activities map in pages.hcl.
+#
+# This template has no sandbox infrastructure of its own (see layouts.hcl),
+# so there's no `config { target = ... }` block here yet. Once you add a
+# sandbox (network/container/vm resources) for the real lab, add:
+#   config {
+#     target = resource.container.<name>
+#   }
+# either here at the task level (default for all its conditions) or inside
+# an individual `condition` block to override it per-condition.
 
 resource "task" "task_01" {
   description = "[Short summary of what learners must achieve in Task 01]"
-
-  config {
-    target = resource.container.main
-  }
 
   condition "step_completed" {
     description = "[Describe what the learner must configure in Task 01]"
@@ -23,10 +28,6 @@ resource "task" "task_01" {
 resource "task" "task_02" {
   description = "[Short summary of what learners must achieve in Task 02]"
 
-  config {
-    target = resource.container.main
-  }
-
   condition "step_completed" {
     description = "[Describe what the learner must run/verify in Task 02]"
 
@@ -40,10 +41,6 @@ resource "task" "task_02" {
 resource "task" "task_03" {
   description = "[Short summary of what learners must achieve in Task 03]"
 
-  config {
-    target = resource.container.main
-  }
-
   condition "step_completed" {
     description = "[Describe what the learner must review/update in Task 03]"
 
@@ -56,10 +53,6 @@ resource "task" "task_03" {
 
 resource "task" "task_04" {
   description = "[Short summary of what learners must achieve in Task 04]"
-
-  config {
-    target = resource.container.main
-  }
 
   condition "step_completed" {
     description = "[Describe what the learner must remove/finish in Task 04]"

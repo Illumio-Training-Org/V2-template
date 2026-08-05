@@ -1,7 +1,7 @@
 resource "lab" "main" {
   title       = "[LAB TITLE]"
   description = "Learn [LAB TOPIC] by performing tasks on [SYSTEM/PLATFORM] and experimenting with [KEY CONCEPTS]."
-  layout      = resource.layout.two_column
+  layout      = resource.layout.instructions_only
 
   content {
     chapter "getting_started" {

@@ -5,14 +5,18 @@ style (numbered tasks, bracketed placeholders, NOTE/IMPORTANT callouts,
 runnable command block) into Instruqt Labs 2.0's lab/chapter/page/task model.
 See `../v2-migration-notes.md` for the full v1 → v2 rationale.
 
+**This template is a formatting/content starting point only — it has no
+sandbox infrastructure.** There's no `sandbox.hcl`/`tabs.hcl` and no
+`config.target` on the tasks. Add those yourself once a real lab needs a
+container/VM to run checks against; see the comments in `layouts.hcl` and
+`tasks.hcl` for exactly where they plug in.
+
 ## Files
 
 | File | Purpose |
 |---|---|
 | `main.hcl` | Lab metadata + chapter/page content tree |
-| `layouts.hcl` | UI layout (instructions + terminal columns) |
-| `sandbox.hcl` | Network + compute (container/VM) infra |
-| `tabs.hcl` | UI tabs (terminal/service) bound to `sandbox.hcl` |
+| `layouts.hcl` | UI layout — instructions-only by default; comments show how to add a terminal/tab column once you have a sandbox |
 | `pages.hcl` | Page resource → `instructions/page-template.md`, activities map |
 | `tasks.hcl` | One `task` resource per template step, each with a `condition`/`check` |
 | `instructions/page-template.md` | The learner-facing markdown content |
@@ -22,18 +26,21 @@ See `../v2-migration-notes.md` for the full v1 → v2 rationale.
 
 ## Filling in the template
 
-1. Replace every `[BRACKETED_PLACEHOLDER]` across `main.hcl`, `sandbox.hcl`,
-   `tasks.hcl`, and `instructions/page-template.md` with real content.
-2. Swap `sandbox.hcl`'s `[PLATFORM_IMAGE:TAG]` for the actual image/VM this
-   lab targets (or add more `container`/`vm` resources for multi-node labs).
-3. Add/remove `task_0N` resources in `tasks.hcl`, matching keys in
+1. Replace every `[BRACKETED_PLACEHOLDER]` across `main.hcl`, `tasks.hcl`,
+   and `instructions/page-template.md` with real content.
+2. Add/remove `task_0N` resources in `tasks.hcl`, matching keys in
    `pages.hcl`'s `activities` map and `<instruqt-task id="task_0N">` markers
    in the markdown — these three must stay in sync.
-4. Implement the real logic in each `scripts/check_task_0N.sh` (replace the
+3. Implement the real logic in each `scripts/check_task_0N.sh` (replace the
    `exit 1` stub) and keep them executable (`chmod +x`).
-5. Add chapters/pages in `main.hcl` as the lab grows past one page —
+4. Add chapters/pages in `main.hcl` as the lab grows past one page —
    duplicate the `pages.hcl` + `instructions/*.md` + `tasks.hcl` pattern per
    new page rather than overloading a single page.
+5. When the lab needs real infrastructure: add `sandbox.hcl`
+   (`network`/`container`/`vm` resources — see
+   `docs.labs.instruqt.com/reference/sandbox/`), wire `config.target` into
+   `tasks.hcl`, and expand `layouts.hcl` per its inline example to expose a
+   terminal/service/editor tab alongside the instructions.
 
 ## Validating and publishing
 
