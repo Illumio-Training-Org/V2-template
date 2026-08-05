@@ -6,12 +6,13 @@
 > sandbox is set up and before publishing to real learners.
 
 `sandbox.hcl` isn't part of this template (see `../README.md`) — you add it
-per lab. When you do, the first decision is **`container` vs `vm`**, and
-which image to put in it.
+per lab. When you do, there are **two separate decisions**: `container` vs
+`vm` (the compute resource), and **preset vs custom image** (what runs on
+it). They're independent — either resource can use either kind of image.
 
 ---
 
-# 🧩 Decision guide — use `container` unless you hit one of these
+# 🧩 Decision 1 — `container` vs `vm`: use `container` unless you hit one of these
 
 **Default to `container`.** It's cheaper to run (shares the host kernel,
 no per-lab VM boot/resource overhead) and starts in seconds instead of
@@ -73,6 +74,15 @@ its own.
 Good for: CLI/API-driven labs, anything that just needs a shell with tools
 installed — most labs.
 
+> [!NOTE]
+> Confirmed in the "New Container" UI form: the `Image` field is either
+> **"Use a preset"** — a curated dropdown (Debian `debian:12`, Fedora
+> `fedora:44`, Ubuntu `ubuntu:22.04`, CentOS `centos:8`, Rocky, and more
+> below the fold) — or **"Add a new public or private image on GCP"** for
+> anything outside that list. So a custom container image is pulled from
+> GCP specifically (Artifact Registry/GCR), not an arbitrary Docker Hub
+> reference — worth knowing if a lab needs an image that isn't preset.
+
 ---
 
 # 🧩 `vm` — heavier, closer to a real machine, same image syntax
@@ -93,40 +103,84 @@ resource "vm" "main" {
 ```
 
 > [!NOTE]
-> Confirmed against `/reference/sandbox/compute/vm/`: `vm` uses the **same
-> Docker/OCI-style `image { name = "..." }` field as `container`** — it is
-> not, as far as the docs show, a way to boot a native cloud provider VM
-> image directly. What you get is a heavier, more configurable sandbox
-> (explicit CPU/memory, disks, `startup_script`) than `container`, still
-> built from an image reference in the same shape.
+> Confirmed against `/reference/sandbox/compute/vm/` **and** the "New
+> Virtual Machine" UI form: `vm` uses the **same Docker/OCI-style
+> `image { name = "..." }` field as `container`**, right down to
+> `username`/`password` fields explicitly labelled "Docker registry user/
+> password to use for private repositories." It is not a way to boot a
+> native cloud provider VM image directly — same preset-or-custom-GCP-image
+> pattern as `container` above. What you get over `container` is a
+> heavier, more configurable sandbox: explicit `cpu`/`memory` (seen in the
+> UI's Resources section), disks, `startup_script`.
 
 Good for: labs that need more resources, disks, or boot-time provisioning
 than a plain container gives you.
 
 ---
 
+# 🧩 Decision 2 — preset vs custom image: use a preset unless you hit one of these
+
+Both `container` and `vm` offer the same choice in the UI: **"Use a
+preset"** (Debian, Fedora, Ubuntu, CentOS, Rocky, and more) or **"Add a new
+public or private image"** (pulled from GCP). In HCL this is just which
+value goes in `image { name = "..." }` (plus `username`/`password` for a
+private custom image) — same field either way, so switching later is
+cheap.
+
+**Default to a preset.** No registry auth to manage, already vetted, and
+covers almost every "just need a standard Linux shell" case:
+
+- Generic OS version is all the lab cares about (e.g. "a Rocky 9 box," "an
+  Ubuntu shell") and standard package managers/repos are enough to install
+  whatever's needed at runtime via `startup_script` or task setup steps.
+- Nothing proprietary needs to be baked in ahead of time.
+
+**Switch to a custom image when:**
+
+- **A specific product needs to already be installed/configured** at
+  sandbox start — e.g. a VEN pre-installed at a pinned version, so the lab
+  doesn't spend its first several minutes on setup steps unrelated to what
+  it's actually teaching.
+- **Exact version pinning matters for reproducibility** beyond what a
+  preset's tag gives you (presets can move, e.g. `ubuntu:22.04` today vs.
+  whatever `22.04` resolves to later) — build once, reference the same
+  custom image everywhere it's needed.
+- **The OS/config isn't in the preset list at all** (a specific
+  distro/version combo, or a hardened/customer-representative build).
+- **The same non-standard setup is reused across many labs** — build the
+  custom image once, reference it from every lab's `sandbox.hcl`, instead
+  of repeating setup steps/scripts in each one.
+
+If none of those apply, a preset is simpler and one less thing to maintain.
+
+---
+
 # 🧩 A real cloud VM image (e.g. a specific GCP Rocky Linux build)
 
 > [!IMPORTANT]
-> **Unconfirmed.** Whether Instruqt has a distinct path to boot a genuine
-> native cloud image — e.g. GCP's own
-> `rocky-linux-cloud/rocky-linux-9-optimized-gcp-v20241009` release, with
-> its real kernel, GCP guest agent, and full hardware-level VM isolation —
-> separate from the `container`/`vm` resources above, was **not found** in
-> the docs reviewed for this template. There's a documented
-> `google_project` resource for provisioning a sandboxed GCP project, and a
-> broader "Cloud Providers (AWS, Azure, Google Cloud)" category mentioned
-> elsewhere, but not a confirmed example of referencing a specific native
-> image build. If a lab genuinely needs that (see below for why it might),
-> check `docs.labs.instruqt.com/reference/sandbox/cloud/google/` directly
-> or ask Instruqt support before assuming either `container` or `vm` can
-> do it.
+> **Still unconfirmed, now more likely "no."** Both the `container` and
+> `vm` UI forms only ever offer a **preset** or a **Docker-style image on
+> GCP** (Artifact Registry/GCR) — neither exposes a field for a native GCP
+> Compute Engine image like `rocky-linux-cloud/rocky-linux-9-optimized-gcp-v20241009`.
+> That doesn't fully rule it out (the "Add a new public or private image"
+> sub-form's exact fields haven't been opened/inspected yet), but it makes
+> a distinct native-VM-image path look unlikely through `container`/`vm`.
+> There's a documented `google_project` resource for provisioning a
+> sandboxed GCP project, and a broader "Cloud Providers (AWS, Azure, Google
+> Cloud)" category mentioned elsewhere, which is the more probable place
+> such a thing would live if it exists at all. If a lab genuinely needs a
+> real native cloud image, check
+> `docs.labs.instruqt.com/reference/sandbox/cloud/google/` directly or ask
+> Instruqt support rather than assuming `container`/`vm` can do it.
 
 ---
 
 The short version, specific to Illumio content: **any lab demonstrating a
 VEN actually enforcing rules needs `vm`; a lab that just installs/inspects/
-runs CLI commands against a VEN can stay on the cheaper `container`.**
+runs CLI commands against a VEN can stay on the cheaper `container`. And on
+top of that, reach for a custom image only once a preset stops being
+enough** — e.g. the VEN needs to be pre-installed rather than set up live,
+or the same non-standard build gets reused across several labs.
 
 See `../v2-migration-notes.md` for further evidence/updates as this gets
 tested against real labs.
