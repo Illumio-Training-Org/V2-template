@@ -1,14 +1,3 @@
-resource "layout" "instructions_only" {
-  column {
-    width = "100"
-
-    instructions {
-      title  = "Instructions"
-      active = true
-    }
-  }
-}
-
 # This template ships with an instructions-only layout since it has no
 # sandbox infrastructure defined (see tasks.hcl). Once you add a sandbox
 # (network/container/vm resources — not part of this starting-point
@@ -35,3 +24,17 @@ resource "layout" "instructions_only" {
 #
 # and update main.hcl's `layout = resource.layout.instructions_only` to
 # point at the new layout resource.
+
+resource "layout" "layout_2_columns" {
+  column {
+    width = "50%"
+  }
+
+  column {
+    instructions {
+      title = "Instructions"
+    }
+
+    width = "50%"
+  }
+}
