@@ -1,5 +1,5 @@
 resource "lab" "main" {
-  title       = "[LAB TITLE]"
+  title       = "READ-ME-FIRST-Template"
   description = "Learn [LAB TOPIC] by performing tasks on [SYSTEM/PLATFORM] and experimenting with [KEY CONCEPTS]."
   layout      = resource.layout.layout_2_columns
 
