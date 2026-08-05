@@ -157,21 +157,38 @@ If none of those apply, a preset is simpler and one less thing to maintain.
 
 # 🧩 A real cloud VM image (e.g. a specific GCP Rocky Linux build)
 
-> [!IMPORTANT]
-> **Still unconfirmed, now more likely "no."** Both the `container` and
-> `vm` UI forms only ever offer a **preset** or a **Docker-style image on
-> GCP** (Artifact Registry/GCR) — neither exposes a field for a native GCP
-> Compute Engine image like `rocky-linux-cloud/rocky-linux-9-optimized-gcp-v20241009`.
-> That doesn't fully rule it out (the "Add a new public or private image"
-> sub-form's exact fields haven't been opened/inspected yet), but it makes
-> a distinct native-VM-image path look unlikely through `container`/`vm`.
-> There's a documented `google_project` resource for provisioning a
-> sandboxed GCP project, and a broader "Cloud Providers (AWS, Azure, Google
-> Cloud)" category mentioned elsewhere, which is the more probable place
-> such a thing would live if it exists at all. If a lab genuinely needs a
-> real native cloud image, check
-> `docs.labs.instruqt.com/reference/sandbox/cloud/google/` directly or ask
-> Instruqt support rather than assuming `container`/`vm` can do it.
+**Confirmed: not through `container`/`vm`, but possible via the `terraform`
+resource.** The full sandbox resource catalog has no dedicated
+"native GCP VM" resource — `container` and `vm` are always Docker/OCI-style
+image references (preset or GCP-hosted custom), and `google_project` only
+provisions a sandboxed GCP *project* (IAM users/service accounts/API
+enablement), not compute instances.
+
+What actually gets you a real native cloud image is the separate
+**`terraform`** sandbox resource — it runs your own `.tf` files (standard
+Terraform, any provider) inside a container and can pass variables in and
+capture outputs back out for other Instruqt resources to use:
+
+```hcl
+resource "terraform" "gcp_vm" {
+  source            = "./terraform"
+  version           = "1.9.8"
+  working_directory = "/terraform"
+  variables = {
+    image = "rocky-linux-cloud/rocky-linux-9-optimized-gcp-v20241009"
+  }
+}
+```
+
+`./terraform` here is a folder of ordinary `.tf` files you write yourself,
+using the real Google Terraform provider's `google_compute_instance`
+resource with that exact image reference — Instruqt just runs
+`terraform apply` for you and can wire the result (e.g. an IP address)
+into a `terminal`/`service` tab via captured outputs. This is a
+meaningfully bigger lift than `container`/`vm` (real GCP credentials/
+project, real Terraform state, real boot time/cost) — only reach for it
+when a lab specifically needs the real OS/hypervisor-level behaviour a
+Docker-style image genuinely can't provide, not as a default.
 
 ---
 
