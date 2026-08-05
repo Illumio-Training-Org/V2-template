@@ -1,7 +1,7 @@
 resource "lab" "main" {
   title       = "[LAB TITLE]"
   description = "Learn [LAB TOPIC] by performing tasks on [SYSTEM/PLATFORM] and experimenting with [KEY CONCEPTS]."
-  layout      = resource.layout.instructions_only
+  layout      = resource.layout.layout_2_columns
 
   content {
     chapter "start_here" {
@@ -9,6 +9,7 @@ resource "lab" "main" {
 
       page "github_setup" {
         reference = resource.page.github_setup
+        layout    = resource.layout.layout_2_columns
       }
 
       page "which_base_image" {
@@ -21,16 +22,8 @@ resource "lab" "main" {
 
       page "template_layout_example" {
         reference = resource.page.template_layout_example
+        layout    = resource.layout.layout_2_columns
       }
     }
-
-    # Add more chapters/pages as the lab grows, e.g.:
-    # chapter "cleanup" {
-    #   title = "[CHAPTER 2 TITLE]"
-    #
-    #   page "next_page" {
-    #     reference = resource.page.next_page
-    #   }
-    # }
   }
 }
