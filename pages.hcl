@@ -3,6 +3,11 @@ resource "page" "github_setup" {
   file  = "instructions/00-github-setup.md"
 }
 
+resource "page" "which_base_image" {
+  title = "Before You Start: Which Base Image?"
+  file  = "instructions/01-which-base-image.md"
+}
+
 resource "page" "template_layout_example" {
   title = "Template layout example"
   file  = "instructions/page-template.md"

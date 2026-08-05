@@ -10,6 +10,10 @@ resource "lab" "main" {
       page "github_setup" {
         reference = resource.page.github_setup
       }
+
+      page "which_base_image" {
+        reference = resource.page.which_base_image
+      }
     }
 
     chapter "getting_started" {
