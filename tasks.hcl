@@ -4,6 +4,8 @@
 # and the activities map in pages.hcl.
 
 resource "task" "task_01" {
+  description = "[Short summary of what learners must achieve in Task 01]"
+
   config {
     target = resource.container.main
   }
@@ -19,6 +21,8 @@ resource "task" "task_01" {
 }
 
 resource "task" "task_02" {
+  description = "[Short summary of what learners must achieve in Task 02]"
+
   config {
     target = resource.container.main
   }
@@ -34,6 +38,8 @@ resource "task" "task_02" {
 }
 
 resource "task" "task_03" {
+  description = "[Short summary of what learners must achieve in Task 03]"
+
   config {
     target = resource.container.main
   }
@@ -49,6 +55,8 @@ resource "task" "task_03" {
 }
 
 resource "task" "task_04" {
+  description = "[Short summary of what learners must achieve in Task 04]"
+
   config {
     target = resource.container.main
   }
