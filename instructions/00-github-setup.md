@@ -59,5 +59,44 @@ through the Instruqt UI pushes a real commit back to the same repo
 
 ---
 
+# 🧩 Pushing updates with git (recommended over manual uploads)
+
+GitHub's **Add file → Upload files** button works, but it only adds/
+overwrites files — it never deletes anything, and every upload becomes a
+flat "Add files via upload" commit with no real history. For a lab you'll
+iterate on repeatedly, set up the git CLI once instead:
+
+**1 )** One-time auth setup:
+
+```bash,run
+gh auth login
+```
+
+Answer: **GitHub.com** → **HTTPS** → **Yes** (authenticate Git with your
+GitHub credentials) → **Login with a web browser**. It prints a one-time
+code and a URL — open the URL, enter the code, approve in the browser.
+
+> [!IMPORTANT]
+> If `gh auth login` was run non-interactively (e.g. backgrounded) and its
+> prompts got skipped, git push may fail with
+> `Invalid username or token. Password authentication is not supported`.
+> Fix it with:
+> ```bash,run
+> gh auth setup-git
+> ```
+> This explicitly wires git's credential helper to gh's stored token —
+> confirmed to resolve exactly this error.
+
+**2 )** Every update after that, from inside the lab's local folder:
+
+```bash,run
+git add -A
+git commit -m "Describe what changed"
+git push
+```
+
+`git add -A` correctly stages adds, edits, **and deletions** in one go —
+no more manually trash-canning stale files in the GitHub UI.
+
 See `../v2-migration-notes.md` for the full evidence behind these claims
 (exact error messages, what was tested, and what's still unconfirmed).

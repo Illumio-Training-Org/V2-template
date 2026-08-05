@@ -62,17 +62,41 @@ process:
    to link that repo. The Instruqt GitHub App needs access to the repo —
    an org admin may need to grant that once.
 2. **Every push after that syncs automatically** — plain `git push`, no
-   extra CLI or UI step:
+   extra CLI or UI step.
+
+**Recommended: use the git CLI, not manual browser uploads**, once a lab
+will see repeated iterations — GitHub's Upload Files button never deletes
+stale files and produces flat, unhelpful commits. One-time auth setup:
+
+```bash
+gh auth login   # GitHub.com → HTTPS → Yes → Login with a web browser
+gh auth setup-git   # only needed if push later fails with
+                     # "Invalid username or token" — wires git's
+                     # credential helper to gh's stored token
+```
+
+Then, from inside this folder:
 
 ```bash
 git init
 git branch -m main
+git remote add origin https://github.com/Illumio-Training-Org/REPO_NAME.git
 git add .
 git commit -m "Initial lab structure from v2template"
-git remote add origin git@github.com:Illumio-Training-Org/REPO_NAME.git
 git push -u origin main
 # then: Import Lab in the v2 UI, select this repo, once
 ```
+
+Every update after that first push is just:
+
+```bash
+git add -A
+git commit -m "Describe what changed"
+git push
+```
+
+`git add -A` correctly stages adds, edits, *and* deletions in one commit —
+solving the exact "old files left behind" problem manual uploads have.
 
 v2's built-in internal version control (branches, tags, history) runs
 underneath this automatically too — nothing extra to configure for that.
