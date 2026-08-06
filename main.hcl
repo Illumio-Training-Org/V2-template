@@ -26,4 +26,10 @@ resource "lab" "main" {
       }
     }
   }
+
+  settings {
+    timelimit {
+      duration = "60m"
+    }
+  }
 }
