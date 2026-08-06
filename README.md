@@ -43,6 +43,11 @@ container/VM to run checks against; see the comments in `layouts.hcl` and
    `docs.labs.instruqt.com/reference/sandbox/`), wire `config.target` into
    `tasks.hcl`, and expand `layouts.hcl` per its inline example to expose a
    terminal/service/editor tab alongside the instructions.
+6. **Leave `main.hcl`'s `settings { timelimit { duration = "60m" } }`
+   block in place** — confirmed by testing that a lab without an explicit
+   time limit doesn't work. `60m` is the default for every lab built from
+   this template; adjust the duration per lab if it genuinely needs more
+   or less time, but don't remove the block.
 
 ## Validating and publishing
 
